@@ -6,20 +6,24 @@ import requests
 import asyncio
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
 
-# Configuration
-INTERNET_IP = os.getenv('INTLOG_INTERNETIP') # Replace with a reliable IP address to ping (e.g., Google DNS)
-CHECK_INTERVAL = os.getenv('INTTOG_CHECKINTERVAL')  # Time in seconds between pings, defaults to 60
-EMAIL_ADDRESS =  os.getenv('INTTOG_EMAILADDRESS')  # Replace with your email address
-EMAIL_PASSWORD = os.getenv('INTTOG_EMAILPASSWORD')  # Replace with your app password (not your regular password)
-RECIPIENT_EMAIL =  os.getenv('INTTOG_TOEMAILADDRESS') # Replace with recipient's email address
-SMTP_SERVER = os.getenv('INTTOG_SMTPSERVER')  # Replace with your SMTP server
-SMTP_PORT = os.getenv('INTTOG_SMTPSERVERPORT')  # Port for Gmail with TLS 587 for example
-T
-# Kasa device configuration
-KASA_DEVICE_IP = "192.168.1.100"  # Replace with your Kasa smart plug IP address
-KASA_USERNAME = "your_username"  # Replace with your Kasa account username
-KASA_PASSWORD = "your_password"  # Replace with your Kasa account password
+# Load environment variables from .env file
+load_dotenv()
+
+# Configuration from environment variables
+INTERNET_IP = os.getenv("INTERNET_IP", "8.8.8.8")
+CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "60"))
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+
+# Kasa device configuration from environment variables
+KASA_DEVICE_IP = os.getenv("KASA_DEVICE_IP")
+KASA_USERNAME = os.getenv("KASA_USERNAME")
+KASA_PASSWORD = os.getenv("KASA_PASSWORD")
 
 def restart_kasa_plug():
     """
