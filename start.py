@@ -5,10 +5,14 @@ import sys
 from dotenv import load_dotenv
 from Utilities.EmailSender import EmailSender
 from Utilities.KasaDevice import KasaDevice
+from Utilities.Logger import Logger
+
+# Initialize logger
+logger = Logger("Main")
 
 # Add startup message immediately
-print("InternetToggle application starting...")
-print("------------------------------------------")
+logger.info("InternetToggle application starting...")
+logger.info("------------------------------------------")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,13 +28,13 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 KASA_PLUG_IP = os.getenv("KASA_PLUG_IP")
 
 # Print configuration (without sensitive data)
-print(f"Configuration loaded:")
-print(f"INTERNET_IP: {INTERNET_IP}")
-print(f"CHECK_INTERVAL: {CHECK_INTERVAL} seconds")
-print(f"SMTP_SERVER: {SMTP_SERVER}")
-print(f"SMTP_PORT: {SMTP_PORT}")
-print(f"KASA_PLUG_IP: {KASA_PLUG_IP}")
-print("------------------------------------------")
+logger.info(f"Configuration loaded:")
+logger.info(f"INTERNET_IP: {INTERNET_IP}")
+logger.info(f"CHECK_INTERVAL: {CHECK_INTERVAL} seconds")
+logger.info(f"SMTP_SERVER: {SMTP_SERVER}")
+logger.info(f"SMTP_PORT: {SMTP_PORT}")
+logger.info(f"KASA_PLUG_IP: {KASA_PLUG_IP}")
+logger.info("------------------------------------------")
 
 # Additional configuration for retry behavior
 RETRY_INTERVAL = 180  # 3 minutes in seconds
@@ -49,11 +53,11 @@ def restart_kasa_plug():
     Restart a Kasa smart plug by turning it off, waiting a few seconds, and turning it back on.
     """
     try:
-        print("Restarting Kasa smart plug...")
+        logger.info("Restarting Kasa smart plug...")
         # Write Kasa device restart logic here
         return True
     except Exception as e:
-        print(f"Failed to restart Kasa plug: {e}")
+        logger.error(f"Failed to restart Kasa plug: {e}")
         return False
 
 def send_email(is_down=True):
@@ -84,18 +88,16 @@ async def main():
     previous_state = None
     retry_count = 0
 
-    print("Initializing Kasa device...")
+    logger.info("Initializing Kasa device...")
     kasa = KasaDevice(ip_address=KASA_PLUG_IP)
     
-
-    
     while True:
-        print("Checking router status...")
+        logger.info("Checking router status...")
         current_state = ping_internetip()
         
         if not current_state and (previous_state is None or previous_state):
             # Router just went down
-            print("Router is down. Sending alert email...")
+            logger.warning("Router is down. Sending alert email...")
             send_email(is_down=True)
             await kasa.restart_device()
             
@@ -104,37 +106,37 @@ async def main():
             
             while (retry_count < MAX_RETRY_ATTEMPTS):
                 await kasa.restart_device()
-                print(f"Waiting {RETRY_INTERVAL // 60} minutes to check if router recovers (attempt {retry_count + 1}/{MAX_RETRY_ATTEMPTS})...")
+                logger.info(f"Waiting {RETRY_INTERVAL // 60} minutes to check if router recovers (attempt {retry_count + 1}/{MAX_RETRY_ATTEMPTS})...")
                 time.sleep(RETRY_INTERVAL)
                 
                 # Check if router recovered
                 if ping_internetip():
-                    print("Router is back up after restart!")
+                    logger.info("Router is back up after restart!")
                     send_email(is_down=False)
                     break
                 else:
                     retry_count += 1
-                    print(f"Router still down after restart attempt {retry_count}/{MAX_RETRY_ATTEMPTS}")
+                    logger.warning(f"Router still down after restart attempt {retry_count}/{MAX_RETRY_ATTEMPTS}")
                 
                 # If we've exhausted all retry attempts and router is still down, quit
             if retry_count >= MAX_RETRY_ATTEMPTS:
-                    print(f"Router still down after {MAX_RETRY_ATTEMPTS} restart attempts. Exiting program.")
+                    logger.error(f"Router still down after {MAX_RETRY_ATTEMPTS} restart attempts. Exiting program.")
                     send_email(is_down=True)  # Send a final alert
                     sys.exit(1)
             else:
-                print("Router recovered before restart was needed.")
+                logger.info("Router recovered before restart was needed.")
                 send_email(is_down=False)
                 
         elif current_state and (previous_state is None or not previous_state):
-            print("Router is up. Sending recovery email...")
+            logger.info("Router is up. Sending recovery email...")
             send_email(is_down=False)
             # Reset counters when router comes back
             retry_count = 0
             
         elif current_state:
-            print("Router is still up.")
+            logger.debug("Router is still up.")
         else:
-            print("Router is still down, but already being handled by retry logic.")
+            logger.debug("Router is still down, but already being handled by retry logic.")
             
         previous_state = current_state
         time.sleep(CHECK_INTERVAL)
