@@ -1,13 +1,10 @@
 import os
 import time
-import smtplib
-import json
-import requests
 import asyncio
 import sys
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+from Utilities.EmailSender import EmailSender
+from Utilities.KasaDevice import KasaDevice
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,10 +17,19 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+KASA_PLUG_IP = os.getenv("KASA_PLUG_IP")
 
 # Additional configuration for retry behavior
 RETRY_INTERVAL = 180  # 3 minutes in seconds
 MAX_RETRY_ATTEMPTS = 3  # Maximum number of retry attempts
+
+# Initialize email sender
+email_sender = EmailSender(
+    email_address=EMAIL_ADDRESS,
+    email_password=EMAIL_PASSWORD,
+    smtp_server=SMTP_SERVER,
+    smtp_port=SMTP_PORT
+)
 
 def restart_kasa_plug():
     """
@@ -38,41 +44,26 @@ def restart_kasa_plug():
         return False
 
 def send_email(is_down=True):
-    try:
-        # Create the email
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_ADDRESS
-        msg['To'] = RECIPIENT_EMAIL
+    if is_down:
+        subject = "Router Down Alert"
+        body = "The router is not responding to pings. Please check your network."
+    else:
+        subject = "Router Restored Alert"
+        body = "The router is back online and responding to pings."
         
-        if is_down:
-            msg['Subject'] = "Router Down Alert"
-            body = "The router is not responding to pings. Please check your network."
-        else:
-            msg['Subject'] = "Router Restored Alert"
-            body = "The router is back online and responding to pings."
-            
-        msg.attach(MIMEText(body, 'plain'))
-
-        # Connect to the SMTP server and send the email
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.ehlo()  # Identify to the SMTP server
-        server.starttls()  # Secure the connection
-        server.ehlo()  # Re-identify over TLS connection
-        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        print("Alert email sent.")
-    except Exception as e:
-        print(f"Failed to send email: {e}")
+    email_sender.send_email(RECIPIENT_EMAIL, subject, body)
 
 def ping_internetip():
     response = os.system(f"ping -n 1 {INTERNET_IP} >nul 2>&1")
     return response == 0
 
-def main():
+async def main():
     previous_state = None
-    down_count = 0
     retry_count = 0
+
+    kasa = KasaDevice(ip_address=KASA_PLUG_IP)
+    
+
     
     while True:
         current_state = ping_internetip()
@@ -81,13 +72,13 @@ def main():
             # Router just went down
             print("Router is down. Sending alert email...")
             send_email(is_down=True)
-            restart_kasa_plug()
+            await kasa.restart_device()
             
             # Reset retry counter on initial detection
             retry_count = 0
             
             while (retry_count < MAX_RETRY_ATTEMPTS):
-                restart_kasa_plug()
+                await kasa.restart_device()
                 print(f"Waiting {RETRY_INTERVAL // 60} minutes to check if router recovers (attempt {retry_count + 1}/{MAX_RETRY_ATTEMPTS})...")
                 time.sleep(RETRY_INTERVAL)
                 
@@ -113,7 +104,6 @@ def main():
             print("Router is up. Sending recovery email...")
             send_email(is_down=False)
             # Reset counters when router comes back
-            down_count = 0
             retry_count = 0
             
         elif current_state:
@@ -125,4 +115,4 @@ def main():
         time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

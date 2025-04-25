@@ -6,4 +6,4 @@ setx /M VAR_NAME "VALUE"
 
 ## Dependencies
 
-pip install python-kasa python-dotenv requests
+pip install python-kasa python-dotenv requests asyncio
