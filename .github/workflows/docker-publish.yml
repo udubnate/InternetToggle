@@ -2,7 +2,7 @@ name: Build and Push Docker image
 
 on:
   push:
-    branches: [master]  # or your branch
+    branches: [Development]  # or your branch
 
 jobs:
   build:
