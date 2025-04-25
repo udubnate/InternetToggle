@@ -16,6 +16,9 @@ services:
       - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
       - SMTP_PORT=${SMTP_PORT:-587}
       - KASA_PLUG_IP=${KASA_PLUG_IP}
+      - PYTHONUNBUFFERED=1  # This ensures Python output is unbuffered
     volumes:
       - ./:/app
     network_mode: host  # Required for proper ping functionality
+    tty: true  # Allocate a pseudo-TTY
+    stdin_open: true  # Keep stdin open
