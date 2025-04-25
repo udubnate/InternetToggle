@@ -21,11 +21,6 @@ RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 
-# Kasa device configuration from environment variables
-KASA_DEVICE_IP = os.getenv("KASA_DEVICE_IP")
-KASA_USERNAME = os.getenv("KASA_USERNAME")
-KASA_PASSWORD = os.getenv("KASA_PASSWORD")
-
 # Additional configuration for retry behavior
 RETRY_INTERVAL = 180  # 3 minutes in seconds
 MAX_RETRY_ATTEMPTS = 3  # Maximum number of retry attempts
@@ -36,22 +31,7 @@ def restart_kasa_plug():
     """
     try:
         print("Restarting Kasa smart plug...")
-        
-        # Turn off the plug
-        turn_off_url = f"http://{KASA_DEVICE_IP}/api/v1/device/plugs/power"
-        off_payload = {"state": "off"}
-        requests.post(turn_off_url, json=off_payload, auth=(KASA_USERNAME, KASA_PASSWORD), timeout=10)
-        print("Kasa plug turned off")
-        
-        # Wait for a few seconds
-        time.sleep(5)
-        
-        # Turn on the plug
-        turn_on_url = f"http://{KASA_DEVICE_IP}/api/v1/device/plugs/power"
-        on_payload = {"state": "on"}
-        requests.post(turn_on_url, json=on_payload, auth=(KASA_USERNAME, KASA_PASSWORD), timeout=10)
-        print("Kasa plug turned back on")
-        
+        # Write Kasa device restart logic here
         return True
     except Exception as e:
         print(f"Failed to restart Kasa plug: {e}")
