@@ -1,4 +1,4 @@
-from kasa import Discover, Module
+from kasa import Discover
 import time
 
 class KasaDevice:

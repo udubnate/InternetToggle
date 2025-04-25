@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 from Utilities.EmailSender import EmailSender
 from Utilities.KasaDevice import KasaDevice
 
+# Add startup message immediately
+print("InternetToggle application starting...")
+print("------------------------------------------")
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -18,6 +22,15 @@ RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 KASA_PLUG_IP = os.getenv("KASA_PLUG_IP")
+
+# Print configuration (without sensitive data)
+print(f"Configuration loaded:")
+print(f"INTERNET_IP: {INTERNET_IP}")
+print(f"CHECK_INTERVAL: {CHECK_INTERVAL} seconds")
+print(f"SMTP_SERVER: {SMTP_SERVER}")
+print(f"SMTP_PORT: {SMTP_PORT}")
+print(f"KASA_PLUG_IP: {KASA_PLUG_IP}")
+print("------------------------------------------")
 
 # Additional configuration for retry behavior
 RETRY_INTERVAL = 180  # 3 minutes in seconds
@@ -54,18 +67,30 @@ def send_email(is_down=True):
     email_sender.send_email(RECIPIENT_EMAIL, subject, body)
 
 def ping_internetip():
-    response = os.system(f"ping -n 1 {INTERNET_IP} >nul 2>&1")
+    """
+    Ping the configured internet IP to check connectivity.
+    Works on both Windows and Linux.
+    """
+    # Detect operating system
+    if os.name == 'nt':  # Windows
+        command = f"ping -n 1 {INTERNET_IP} >nul 2>&1"
+    else:  # Linux/Unix
+        command = f"ping -c 1 {INTERNET_IP} >/dev/null 2>&1"
+    
+    response = os.system(command)
     return response == 0
 
 async def main():
     previous_state = None
     retry_count = 0
 
+    print("Initializing Kasa device...")
     kasa = KasaDevice(ip_address=KASA_PLUG_IP)
     
 
     
     while True:
+        print("Checking router status...")
         current_state = ping_internetip()
         
         if not current_state and (previous_state is None or previous_state):
