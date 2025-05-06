@@ -16,6 +16,7 @@ services:
       - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
       - SMTP_PORT=${SMTP_PORT:-587}
       - KASA_PLUG_IP=${KASA_PLUG_IP}
+      - AUDIT_MODE=${AUDIT_MODE:-False}
       - PYTHONUNBUFFERED=1  # This ensures Python output is unbuffered
     volumes:
       - ./:/app
